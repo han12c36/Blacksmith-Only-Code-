@@ -1,0 +1,66 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+public class CustomCanvas : MonoBehaviour { }
+
+public class CanvasManager : SubManager
+{
+    /// <summary>
+    /// Canvas를 여러개로 분할하여 작업하기 때문에 빠른 탐색을 위해 자료구조(Dictionary)사용
+    /// </summary>
+    private Dictionary<string, CustomCanvas> canvasDic = new Dictionary<string, CustomCanvas>();
+
+    public override void SettingManagerForNextScene(int nextSceneIndex)
+    {
+        if (!isActivated) SetActivated(true);
+
+        //mainCanvas.TryOpenCurSceneUI(nextSceneIndex);
+    }
+
+    public T GetCanvas<T>(string key) where T : CustomCanvas
+    {
+        CustomCanvas canvas;
+        if(canvasDic.TryGetValue(key,out canvas)) return (T)canvas;
+
+        return null;
+    }
+
+    private bool RegisterCanvas(string path, string InstanceName,string key)
+    {
+        CanvasGroup[] prefabs = Resources.LoadAll<CanvasGroup>(path) as CanvasGroup[];
+
+        if (prefabs.Length <= 0) return false;
+
+        GameObject box = PublicLibrary.CreateBox(InstanceName);
+        box.transform.SetParent(gameObject.transform);
+        foreach (CanvasGroup prefab in prefabs)
+        {
+            CanvasGroup canvas = Instantiate(prefab);
+            canvas.gameObject.SetActive(false);
+            canvas.transform.SetParent(box.transform);
+
+            canvasDic.Add(key, canvas.GetComponent<CustomCanvas>());
+        }
+
+
+        return true;
+    }
+
+    public override void ManagerInitailized()
+    {
+        RegisterCanvas(Paths.MainCanvasPath,     Constants.MainCanvasName,     Constants.MainCanvasKey);
+        RegisterCanvas(Paths.LoadingCanvasPath,  Constants.LoadingCanvasName,  Constants.LoadingCanvasKey);
+        RegisterCanvas(Paths.FadeCanvasPath,     Constants.FadeCanvasName,     Constants.FadeCanvasKey);
+        RegisterCanvas(Paths.TutorialCanvasPath, Constants.TutorialCanvasName, Constants.TutorialCanvasKey);
+    }
+
+    public override void ManagerUpdate()
+    {
+        base.ManagerUpdate();
+
+        //if (Input.GetKeyDown(KeyCode.Escape))
+        //{
+        //    SystemCanvas.TryOpenSystemCanvas();
+        //}
+    }
+}
